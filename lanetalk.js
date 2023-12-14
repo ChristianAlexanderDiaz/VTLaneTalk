@@ -1,9 +1,7 @@
 //an import statement into the script
 const puppeteer = require('puppeteer');
-const readline = require('readline');
 
-
-//an asynchronous function is something that returns a promise that can be awaited
+// an asynchronous function is something that returns a promise that can be awaited
 (async () => {
     //launch up the browser
     const browser = await puppeteer.launch();
@@ -56,20 +54,4 @@ const readline = require('readline');
 
     //close the browser to finish
     await browser.close();
-
-      // Filter for a specific bowler
-  const bowlerName = 'Christian Diaz'; // Replace with the desired name
-  const filteredScores = scores.filter(player => player.name.includes(bowlerName));
-
-  // Loop through each player and ask for confirmation
-  for (let data of filteredScores) {
-    const isConfirmed = await askConfirmation(data);
-    if (isConfirmed) {
-      console.log('Confirmed:', data);
-      // Here you would add the code to push to Google Sheets
-    } else {
-      console.log('Not confirmed:', data);
-    }
-  }
-  rl.close();
 })();
