@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/ChristianAlexanderDiaz/VTLaneTalk#readme",
   "dependencies": {
+    "dotenv": "^16.3.1",
+    "googleapis": "^129.0.0",
     "puppeteer": "^21.6.1"
   }
 }
