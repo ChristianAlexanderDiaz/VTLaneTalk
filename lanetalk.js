@@ -11,19 +11,14 @@ const rl = readline.createInterface({
 });
 
 const namesToFind = [
-  "Kiki",
-  "Kristen",
-  "Eric",
-  "Susan",
-  "Kellie",
-  "Katelyn",
-  "Ana",
-  "Sam",
-  "Ben",
+  "Christian"
 ];
 
 (async () => {
   const scores = await scrapeData();
+
+  console.log("All gathered data:");
+  console.table(scores);
 
   const matchedScores = scores.filter((player) =>
     namesToFind.some((nameToFind) =>
@@ -42,18 +37,15 @@ const namesToFind = [
     await pushToGoogleSheets(matchedScores)
       .then(() => {
         console.log("Done.");
-        rl.close();
       })
-      .catch((err) =>
-        console.error("Error pushing data to Google Sheets:", err)
-      );
-  } else if (confirmation === "n") {
-    showAllData(scores);
+      .catch((err) => {
+        console.error("Error pushing data to Google Sheets:", err);
+      });
   } else {
-    console.log("Invalid input. Exiting program.");
-    rl.close();
-    await browser.close();
+    console.log("Not confirmed. Exiting program.");
   }
+
+  rl.close();
 })();
 
 async function scrapeData() {
@@ -71,36 +63,27 @@ async function scrapeData() {
   await page.waitForSelector(".player.ng-star-inserted");
 
   const scores = await page.evaluate(() => {
-    const players = Array.from(
-      document.querySelectorAll(".player.ng-star-inserted")
-    );
-    return players.map((player) => {
-      const nameText = player.querySelector(".nameAndDate > .name").innerText;
-      const [name, team] = nameText.split("\n");
-      const scoreElements = player.querySelectorAll(
-        ".numbersWrapper > .numberBatch"
-      );
-      const scores = Array.from(scoreElements)
-        .map((el) => el.innerText)
-        .join(", ");
-      return [name, team, scores];
+    const players = Array.from(document.querySelectorAll('.player.ng-star-inserted'));
+    return players.map(player => {
+      const nameText = player.querySelector('.nameAndDate > .name').innerText;
+      const [name, team] = nameText.split('\n');
+      const date = player.querySelector('.date').innerText; // Fetching the date
+      const scoreElements = player.querySelectorAll('.numbersWrapper > .numberBatch');
+      const scores = Array.from(scoreElements).map(el => el.innerText).join(', ');
+      return [name, team, scores, date]; // Including the date in the return array
     });
   });
+
 
   await browser.close();
   return scores;
 }
 
-async function askForConfirmation(namesAndScores) {
+async function askForConfirmation() {
   return new Promise((resolve) => {
-    rl.question(
-      `Found the following Bowling Club members:\n${namesAndScores.join(
-        "\n"
-      )}\nWould you like to push this to Google Sheets? (Y/N) `,
-      (answer) => {
-        resolve(answer.toLowerCase());
-      }
-    );
+    rl.question("Would you like to push this to Google Sheets? (Y/N) ", (answer) => {
+      resolve(answer.toLowerCase());
+    });
   });
 }
 
