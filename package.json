@@ -1,25 +1,5 @@
 {
-  "name": "vtlanetalk",
-  "version": "1.0.0",
-  "description": "",
-  "main": "lanetalk.js",
-  "scripts": {
-    "start": "node lanetalk.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ChristianAlexanderDiaz/VTLaneTalk.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ChristianAlexanderDiaz/VTLaneTalk/issues"
-  },
-  "homepage": "https://github.com/ChristianAlexanderDiaz/VTLaneTalk#readme",
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "googleapis": "^129.0.0",
-    "puppeteer": "^21.6.1"
+    "puppeteer": "^23.0.2"
   }
 }
