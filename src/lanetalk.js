@@ -9,7 +9,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const competitiveBowlers = ["Jess", "Aadi", "demariEh"].map(name => name.toLowerCase());
+const competitiveBowlers = ["1", "Heather", "Chloe"].map(name => name.toLowerCase());
 
 async function main() {
   try {
@@ -73,75 +73,56 @@ function filterBowlersByName(data, competitiveBowlers) {
 
 // Function to store data in an SQLite database
 async function storeDataInSQLite(data) {
-  const dbPath = path.resolve(__dirname, 'bowling_scores.db');
+  const dbPath = path.resolve(__dirname, 'bowling_score.db');
   const db = new sqlite3.Database(dbPath);
 
-  // Create a table if it doesn't exist
-  db.run(`
-    CREATE TABLE IF NOT EXISTS Data (
-      Name TEXT,
-      Team TEXT,
-      Scores TEXT,
-      Date TEXT
-    )
-  `);
+  // Create the Players and Scores tables if they don't exist
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS Players (
+        Name TEXT PRIMARY KEY
+      )
+    `);
 
-  /**
-   * Checks to see if a player already exists in the database
-   */
-  function playerExists(name) {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `SELECT 1 FROM Data WHERE Name = ?`,
-        [name],
-        (err, row) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(!!row); // Resolves to true if the player exists, false otherwise
-          }
+    db.run(`
+      CREATE TABLE IF NOT EXISTS Scores (
+        PlayerName TEXT,
+        Score1 INTEGER,
+        Score2 INTEGER,
+        FOREIGN KEY(PlayerName) REFERENCES Players(Name)
+      )
+    `);
+  });
+
+
+  // Insert entries and log the result
+  for (const player of data) {
+    const name = player[0]; // Extract the name from the array
+    const scores = player[2].map(score => parseInt(score, 10)); // Extract and convert the scores to integers
+
+    // Insert player if not already in the Players table
+    db.run(`INSERT OR IGNORE INTO Players (Name) VALUES (?)`, [name]);
+
+    // Insert the scores for the session
+    db.run(
+      `INSERT INTO Scores (PlayerName, Score1, Score2) VALUES (?, ?, ?)`,
+      [name, scores[0], scores[1]],
+      function(err) {
+        if (err) {
+          console.error("Failed to insert data:", err);
+        } else {
+          console.log("Inserted data:", { name, score1: scores[0], score2: scores[1] });
         }
-      );
-    });
-  }
-
-  // Prepare inserting the data
-  const statement = db.prepare("INSERT INTO Data (Name, Team, Scores, Date) VALUES (?, ?, ?, ?)");
-
-  // Insert entries and log the result
-  // Insert entries and log the result
-  for (const item of data) {
-    try {
-      const exists = await playerExists(item[0]);
-      if (!exists) {
-        statement.run(item[0], item[1], item[2].join(', '), item[3], function(err) {
-          if (err) {
-            console.error("Failed to insert data:", err);
-          } else {
-            console.log("Inserted data:", item);
-          }
-        });
-      } else {
-        console.log(`Player ${item[0]} already exists in the database.`);
       }
-    } catch (err) {
-      console.error("Error checking player existence:", err);
-    }
+    );
   }
 
-  statement.finalize(err => {
+  db.close(err => {
     if (err) {
-      console.error("Failed to finalize statement:", err);
+      console.error("Failed to close database:", err);
     } else {
-      console.log("Statement finalized successfully.");
+      console.log("Database connection closed.");
     }
-    db.close(err => {
-      if (err) {
-        console.error("Failed to close database:", err);
-      } else {
-        console.log("Database connection closed.");
-      }
-    });
   });
 }
 
