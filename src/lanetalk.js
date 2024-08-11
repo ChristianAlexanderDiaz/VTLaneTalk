@@ -9,7 +9,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const competitiveBowlers = ["Jess", "Aadi"].map(name => name.toLowerCase());
+const competitiveBowlers = ["Jess", "Aadi", "demariEh"].map(name => name.toLowerCase());
 
 async function main() {
   try {
@@ -86,19 +86,48 @@ async function storeDataInSQLite(data) {
     )
   `);
 
+  /**
+   * Checks to see if a player already exists in the database
+   */
+  function playerExists(name) {
+    return new Promise((resolve, reject) => {
+      db.get(
+        `SELECT 1 FROM Data WHERE Name = ?`,
+        [name],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(!!row); // Resolves to true if the player exists, false otherwise
+          }
+        }
+      );
+    });
+  }
+
   // Prepare inserting the data
   const statement = db.prepare("INSERT INTO Data (Name, Team, Scores, Date) VALUES (?, ?, ?, ?)");
 
   // Insert entries and log the result
-  data.forEach(item => {
-    statement.run(item[0], item[1], item[2].join(', '), item[3], function(err) {
-      if (err) {
-        console.error("Failed to insert data:", err);
+  // Insert entries and log the result
+  for (const item of data) {
+    try {
+      const exists = await playerExists(item[0]);
+      if (!exists) {
+        statement.run(item[0], item[1], item[2].join(', '), item[3], function(err) {
+          if (err) {
+            console.error("Failed to insert data:", err);
+          } else {
+            console.log("Inserted data:", item);
+          }
+        });
       } else {
-        console.log("Inserted data:", item);
+        console.log(`Player ${item[0]} already exists in the database.`);
       }
-    });
-  });
+    } catch (err) {
+      console.error("Error checking player existence:", err);
+    }
+  }
 
   statement.finalize(err => {
     if (err) {
