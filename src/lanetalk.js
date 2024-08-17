@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer"; // Import Puppeteer for web scraping
 import { initializeApp } from "firebase/app"; // Import Firebase app initialization
 import { getFirestore, collection, getDocs, doc, updateDoc, addDoc} from "firebase/firestore"; // Import Firestore services
-import readline from 'readline';
+import readline from 'readline'; // Able to interact with script in the terminal
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,8 +17,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-
-// Function to get the complete bowler list from the database, including nicknames
+/**
+ * Retrieves a list of all bowlers from the Firestore collection.
+ * 
+ * @returns array of 'bowlers' with their corresponding IDs and its data
+ */
 async function getCompleteBowlerList() {
   const querySnapshot = await getDocs(collection(db, "bowlers"));
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
