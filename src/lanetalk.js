@@ -16,7 +16,7 @@ const firebaseConfig = {
 // Initialize Firebase app and Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const dayUUID = "GnvK6kblb1OSoV4gnKFmV"
+const docId = "GnvK6kblb1OSoV4gnKFmV"
 
 /* ------------ GETTERS FROM CLOUD FIRESTORE ------------ */
 
@@ -31,23 +31,31 @@ async function getCompleteBowlerList() {
 }
 
 /**
- * Confirm that the maxScoreArrayLength variable exists and return it.
+ * Retrieves the maxScoreArrayLength from the Firestore collection.
  * 
  * @returns An integer that determines what day it is in the season by multiples of 2.
- * e.g. 2 = 1st day, 4th = 2nd day.
+ * e.g. 2 = 1st day, 4 = 2nd day. Returns null if the document or field does not exist.
  */
 async function getMaxScoreArrayLength() {
-  const docRef = doc(db, "variables", dayUUID); // Refer to the 'variables' collection
-  const docSnap = await getDoc(docRef);
+  const querySnapshot = await getDocs(collection(db, "variables"));
 
-  // Check to see if the `maxScoreArrayLength` still exists
-  if (docSnap.exists()) {
-    return docSnap.data().maxScoreArrayLength;
+  // Since we expect only one document, we can directly access it
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+
+    if (data.maxScoreArrayLength && typeof data.maxScoreArrayLength === 'number') {
+      console.log("maxScoreArrayLength found:", data.maxScoreArrayLength);
+      return data.maxScoreArrayLength;
+    } else {
+      console.log("maxScoreArrayLength field is missing or not a number.");
+      return null;
+    }
   } else {
-    return null; // ! The global variable cannot be reached to check what day it is
+    console.log("No documents found in 'variables' collection.");
+    return null;
   }
 }
-
 
 /**
  * Updates the `maxScoreArrayLength` field in a Firestore document with a new length value.
@@ -57,8 +65,28 @@ async function getMaxScoreArrayLength() {
  * the `maxScoreArrayLength` field with the new length provided as the parameter.
  */
 async function updateMaxScoreArrayLength(newLength) {
-  const docRef = doc(db, "variables", dayUUID);
-  await updateDoc(docRef, {maxScoreArrayLength: newLength }); // Value will changed based on the day
+  if (typeof newLength !== 'number') {
+    console.error("Invalid newLength value. It must be a number.");
+    return;
+  }
+
+  // Use the same logic to get the document ID correctly
+  const querySnapshot = await getDocs(collection(db, "variables"));
+  
+  if (!querySnapshot.empty) {
+    const docRef = querySnapshot.docs[0].ref; // Get the reference to the first (and only) document
+
+    try {
+      await updateDoc(docRef, {
+        maxScoreArrayLength: newLength // Update the value
+      });
+      console.log("Document successfully updated!");
+    } catch (error) {
+      console.error("Error updating document: ", error);
+    }
+  } else {
+    console.log("No document found in the 'variables' collection to update.");
+  }
 }
 
 /**
@@ -225,10 +253,6 @@ function findBowlerByNameOrNickname(playerName, bowlers) {
   );
 }
 
-/**
- * The main function manages real-time updates of bowler scores by scraping data, updating scores in a
- * database, and handling countdowns between cycles.
- */
 async function main() {
   await promptForNewBowlers(); // Prompt to add new bowlers before starting
   let bowlers = await getCompleteBowlerList(); // Get the complete bowlers list
@@ -240,14 +264,17 @@ async function main() {
     nicknames: bowler.nicknames ? bowler.nicknames.map(normalizeName) : []
   }));
 
+  let activeList = []; // Initialize an empty active list
   let cycleCount = 0; // Initialize a counter for the number of loops
 
-  while (true) { // Real-time updates
+  // Initialize maxScoreArrayLength at the beginning
+  let maxScoreArrayLength = await getMaxScoreArrayLength();
+
+  while (true) { // Keep looping until we manually break
 
     cycleCount++; // Increment the counter for each loop iteration
     console.log(`Starting cycle ${cycleCount}...`); // Display the current cycle count
 
-    const maxScoreArrayLength = await getMaxScoreArrayLength(); // Get the current "day"
     const scrapedData = await scrapeData(); // Scrape data from LaneTalk
 
     for (const player of scrapedData) {
@@ -255,35 +282,52 @@ async function main() {
       const bowler = findBowlerByNameOrNickname(player.name, bowlers);
 
       if (bowler) { // If the bowler exists in the database, begin the process
-        const firstGameIndex = maxScoreArrayLength - 2;
-        const secondGameIndex = firstGameIndex + 1;
+        const firstGameIndex = maxScoreArrayLength - 2; //even slot
+        const secondGameIndex = maxScoreArrayLength - 1; //odd slot
 
-        let databaseScoresArray = [...bowler.scores]; // Existing scores from the database
+        // Fetch the most recent scores from Firestore
+        let bowlerRef = doc(db, "bowlers", bowler.id);
+        let bowlerSnapshot = await getDoc(bowlerRef);
+        let databaseScoresArray = bowlerSnapshot.data().scores || [];
 
         console.log(`Initial databaseScoresArray for ${bowler.name}:`, databaseScoresArray);
 
-        // ! If the first game for the days' slot is empty AND if the scraped data contains at least 1 item
-        if (!databaseScoresArray[firstGameIndex] && player.scoresArray.length > 0) {
-          databaseScoresArray[firstGameIndex] = player.scoresArray[0]; // Insert the first score
-          await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the first score
-          console.log(`${bowler.name}'s first score updated to ${player.scoresArray[0]}`);
+        // Case 1: Bowler is not in the active list, update the first score and add them to the active list
+        if (!activeList.includes(bowler.id)) {
+          if (!databaseScoresArray[firstGameIndex] && player.scoresArray.length > 0) {
+            databaseScoresArray[firstGameIndex] = player.scoresArray[0]; // Insert the first score
+            await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the first score
+            console.log(`${bowler.name}'s first score updated to ${player.scoresArray[0]}`);
 
-        // ! If the second slot for the days' slot is empty AND if the scraped data contains at least 2 items
-        }
-        if (!databaseScoresArray[secondGameIndex] && player.scoresArray.length > 1) {
-          databaseScoresArray[secondGameIndex] = player.scoresArray[1]; // Insert second score
-          await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the second score
-          console.log(`${bowler.name}'s second score updated to ${player.scoresArray[1]}`);
-        }
+            activeList.push(bowler.id); // Add bowler to the active list
 
-        // ! If both games are filled, increment the maxScoreArrayLength for the next session
-        if (databaseScoresArray[firstGameIndex] && databaseScoresArray[secondGameIndex]) {
-          console.log(`Both scores have already beenupdated for ${bowler.name}: [${databaseScoresArray[firstGameIndex]}, ${databaseScoresArray[secondGameIndex]}]`);
-          await updateMaxScoreArrayLength(maxScoreArrayLength + 2);
-          console.log(`Updated maxScoreArrayLength to ${maxScoreArrayLength + 2}`);
+            // Print the entire active list array
+            console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
+            console.log("Current active list (Names):", activeList.map(id => {
+              const bowler = bowlers.find(b => b.id === id);
+              return bowler ? bowler.name : "Unknown";
+            }));
+          }
         }
-      } else {
-        // console.log(`${player.name} not found in the database.`); // ! Not found in the database
+        // Case 2: Bowler is already in the active list, update the second score and remove them from the active list
+        else {
+          if (!databaseScoresArray[secondGameIndex] && player.scoresArray.length > 1) {
+            databaseScoresArray[secondGameIndex] = player.scoresArray[1]; // Insert the second score
+            await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the second score
+            console.log(`${bowler.name}'s second score updated to ${player.scoresArray[1]}`);
+
+            activeList = activeList.filter(id => id !== bowler.id); // Remove bowler from the active list
+
+            // Print the entire active list array
+            console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
+            console.log("Current active list (Names):", activeList.map(id => {
+              const bowler = bowlers.find(b => b.id === id);
+              return bowler ? bowler.name : "Unknown";
+            }));
+
+            console.log(`${bowler.name} has completed both scores.`);
+          }
+        }
       }
     }
 
@@ -298,12 +342,16 @@ async function main() {
 
     console.log('\n'); // Move to the next line after the countdown
 
-    // Check if all of the bowlers have finished
-    if (scrapedData.every(player => player.scoresArray.length === 0)) {
-      console.log("All bowlers finished, stopping the script.");
+    // Break the loop if all active bowlers have completed their scores
+    if (activeList.length === 0) {
+      console.log("All bowlers have completed both scores, stopping the script.");
       break; // Exit the loop
     }
   }
+
+  // After all bowlers have their scores updated, finalize the session
+  await updateMaxScoreArrayLength(maxScoreArrayLength + 2);
+  console.log(`Updated maxScoreArrayLength to ${maxScoreArrayLength + 2}`);
 }
 
 main();
