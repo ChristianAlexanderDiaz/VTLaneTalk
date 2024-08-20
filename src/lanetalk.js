@@ -16,7 +16,6 @@ const firebaseConfig = {
 // Initialize Firebase app and Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const docId = "GnvK6kblb1OSoV4gnKFmV"
 
 /* ------------ GETTERS FROM CLOUD FIRESTORE ------------ */
 
