@@ -44,8 +44,8 @@ function BowlersList() {
               <div className="card-body">
                 {/* Bowler's name */}
                 <h5 className="card-title">{bowler.name}</h5>
-                {/* Bowler's scores */}
-                <p className="card-text">Scores: {bowler.scores.join(", ")}</p>
+                {/* Bowler's average */}
+                <p className="card-text">Avg: </p>
               </div>
             </div>
           </div>
