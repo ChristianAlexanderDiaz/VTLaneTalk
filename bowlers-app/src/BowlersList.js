@@ -4,6 +4,7 @@ import { db } from './firebase';
 
 function BowlersList() {
   const [bowlers, setBowlers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchBowlers = async () => {
@@ -15,12 +16,23 @@ function BowlersList() {
     fetchBowlers();
   }, []);
 
+  const filteredBowlers = bowlers.filter(bowler =>
+    bowler.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div>
-      <h1>Bowlers Scores</h1>
-      <ul>
-        {bowlers.map((bowler) => (
-          <li key={bowler.id}>
+    <div className="container mt-5">
+      <h1 className="mb-4">Bowlers Scores</h1>
+      <input
+        type="text"
+        placeholder="Search by name"
+        className="form-control mb-4"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <ul className="list-group">
+        {filteredBowlers.map((bowler) => (
+          <li key={bowler.id} className="list-group-item">
             <strong>{bowler.name}</strong>: {bowler.scores.join(", ")}
           </li>
         ))}

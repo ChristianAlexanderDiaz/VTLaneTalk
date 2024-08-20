@@ -1,7 +1,7 @@
-import logo from './logo.svg';
 import './App.css';
 import React from 'react';
 import BowlersList from './BowlersList';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
