@@ -167,19 +167,31 @@ async function updateBowlerScores(bowlerId, newScores) {
 }
 
 /**
- * Adds a new bowler with a given name and optional nicknames to a collection in a database.
+ * Adds a new bowler with given details to a collection in a database.
  * 
- * @param name - A name of the new bowler being added to the database.
- * @param nicknames - An optional parameter that allows you to provide an array of nicknames 
- * for the bowler being added. If no nicknames are provided, it defaults to an empty array.
+ * @param firstName - The first name of the new bowler being added.
+ * @param lastName - The last name of the new bowler being added.
+ * @param nicknames - An array of nicknames for the bowler being added.
+ * @param handedness - The handedness of the bowler, either 'left' or 'right'.
+ * @param style - The style of the bowler, either 'one-handed' or 'two-handed'.
  */
-async function addNewBowler(name, nicknames = []) {
+async function addNewBowler(firstName, lastName, nicknames = [], handedness, style) {
   await addDoc(collection(db, "bowlers"), {
-    name: name,
+    firstName: firstName,
+    lastName: lastName, 
     nicknames: nicknames,
-    scores: []
+    handedness: handedness,
+    style: style,
+    scores: [], // Initialize scores array as empty
+    average: 0.0,
+    gamesPlayed: 0,
+    handicap: 0,
+    bestGame: 0,
+    bestSeries: 0,
+    worstGame: 0,
+    worstSeries: 0
   });
-  console.log(`Added new bowler: ${name} with nicknames: ${nicknames.join(', ')}`);
+  console.log(`The ${style} ${handedness}y: ${firstName} ${lastName} with nicknames: ${nicknames.join(', ')} has been added to the database.`);
 }
 
 /**
@@ -196,12 +208,27 @@ async function promptForNewBowlers() {
 
   while (addMore) {
     await new Promise((resolve) => {
-      rl.question('Enter the name of the new bowler (or press Enter to stop adding): ', async (name) => {
-        if (name) {
-          rl.question('Do they have any nicknames? (Separate with commas if multiple): ', async (nicknamesInput) => {
-            const nicknames = nicknamesInput ? nicknamesInput.split(',').map(n => n.trim()) : [];
-            await addNewBowler(name, nicknames);
-            resolve();
+      console.log("-------------------------------------------------");
+      rl.question('Enter the first name of the new bowler (or press Enter to stop adding): ', async (firstName) => {
+        if (firstName) {
+          rl.question('Enter the last name of the new bowler: ', async (lastName) => {
+            rl.question('Do they have any nicknames? (Separate with commas if multiple): ', async (nicknamesInput) => {
+              const nicknames = nicknamesInput ? nicknamesInput.split(',').map(n => n.trim()) : [];
+              
+              // Handedness input
+              rl.question('Are they left or right-handed? (Enter "L"or "R"): ', async (handednessInput) => {
+                const handedness = handednessInput.toUpperCase() === "L" ? "left" : "right";
+                
+                // Style input
+                rl.question('Are they one-handed or two-handed? (Enter "1" or "2"): ', async (styleInput) => {
+                  const style = styleInput === "1" ? "one-handed" : "two-handed";
+
+                  await addNewBowler(firstName, lastName, nicknames, handedness, style);
+                  console.log("Success!");
+                  resolve();
+                });
+              });
+            });
           });
         } else {
           addMore = false;
@@ -247,7 +274,7 @@ function findBowlerByNameOrNickname(playerName, bowlers) {
 
   // Check if the normalized name matches the bowler's name or any nickname
   return bowlers.find(bowler => 
-    normalizedPlayerName === bowler.name || 
+    normalizedPlayerName === bowler.firstName || 
     (bowler.nicknames && bowler.nicknames.map(normalizeName).includes(normalizedPlayerName))
   );
 }
