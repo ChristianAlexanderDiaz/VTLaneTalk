@@ -219,7 +219,7 @@ async function updateBowlerScores(bowlerId, newScores) {
 }
 
 /**
- * Adds a new bowler with a given name and optional nicknames to a collection in a database.
+ * Adds a new bowler with a given name, optional nicknames, and initializes the average to 0.
  * 
  * @param name - A name of the new bowler being added to the database.
  * @param nicknames - An optional parameter that allows you to provide an array of nicknames 
@@ -229,7 +229,8 @@ async function addNewBowler(name, nicknames = []) {
   await addDoc(collection(db, "bowlers"), {
     name: name,
     nicknames: nicknames,
-    scores: []
+    scores: [],
+    average: 0
   });
   console.log(`Added new bowler: ${name} with nicknames: ${nicknames.join(', ')}`);
 }
