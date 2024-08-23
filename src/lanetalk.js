@@ -351,6 +351,9 @@ async function main() {
   // After all bowlers have their scores updated, finalize the session
   await updateMaxScoreArrayLength(maxScoreArrayLength + 2);
   console.log(`Updated maxScoreArrayLength to ${maxScoreArrayLength + 2}`);
+
+  console.log("Script completed successfully. Exiting...");
+  process.exit(0); // Exit the process
 }
 
 main();
