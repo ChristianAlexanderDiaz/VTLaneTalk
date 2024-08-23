@@ -17,6 +17,58 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/**
+ * Prompts the user to confirm or modify the maxScoreArrayLength.
+ * 
+ * @param currentLength - The current maxScoreArrayLength found in the database.
+ * 
+ * @returns A promise that resolves with the confirmed or new maxScoreArrayLength.
+ */
+async function promptForMaxScoreArrayLength(currentLength) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(`maxScoreArrayLength found: ${currentLength}. Is this correct? (yes/no) `, async (answer) => {
+      if (answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y') {
+        rl.close();
+        resolve(currentLength);
+      } else {
+        rl.question('Please enter the correct maxScoreArrayLength: ', async (newLength) => {
+          const parsedLength = parseInt(newLength, 10);
+          if (isNaN(parsedLength)) {
+            console.log('Invalid input. Keeping the original value.');
+            rl.close();
+            resolve(currentLength);
+          } else {
+            try {
+              // Update the value in Firestore
+              const querySnapshot = await getDocs(collection(db, "variables"));
+              if (!querySnapshot.empty) {
+                const docRef = querySnapshot.docs[0].ref; // Get the reference to the document
+                await updateDoc(docRef, { maxScoreArrayLength: parsedLength });
+                console.log(`maxScoreArrayLength successfully updated to ${parsedLength} in the database.`);
+                rl.close();
+                resolve(parsedLength);
+              } else {
+                console.log("No document found in the 'variables' collection to update.");
+                rl.close();
+                resolve(currentLength);
+              }
+            } catch (error) {
+              console.error("Error updating maxScoreArrayLength in the database: ", error);
+              rl.close();
+              resolve(currentLength); // Resolve with the old value in case of error
+            }
+          }
+        });
+      }
+    });
+  });
+}
+
 /* ------------ GETTERS FROM CLOUD FIRESTORE ------------ */
 
 /**
@@ -268,6 +320,7 @@ async function main() {
 
   // Initialize maxScoreArrayLength at the beginning
   let maxScoreArrayLength = await getMaxScoreArrayLength();
+  maxScoreArrayLength = await promptForMaxScoreArrayLength(maxScoreArrayLength);
 
   while (true) { // Keep looping until we manually break
 
