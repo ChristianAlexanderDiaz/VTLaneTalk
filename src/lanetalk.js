@@ -99,7 +99,7 @@ async function updateMaxScoreArrayLength(newLength) {
 async function scrapeData() {
   const browser = await puppeteer.launch({ headless: "new" });
   const page = await browser.newPage();
-  const url = "https://beta.lanetalk.com/bowlingcenters/367895d6-d3f2-4d89-b4a6-9f11ea7af700/completed";
+  const url = "https://betan.lanetalk.com/bowlingcenters/367895d6-d3f2-4d89-b4a6-9f11ea7af700/completed";
   const maxAttempts = 3;
   let attemptCount = 0;
   let data = null;
