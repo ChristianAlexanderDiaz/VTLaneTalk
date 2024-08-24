@@ -225,20 +225,25 @@ async function updateBowlerScores(bowlerId, newScores) {
  * @param nicknames - An optional parameter that allows you to provide an array of nicknames 
  * for the bowler being added. If no nicknames are provided, it defaults to an empty array.
  */
-async function addNewBowler(name, nicknames = []) {
+async function addNewBowler(name, nicknames = [], maxScoreArrayLength) {
+  // Initialize the scores array with the appropriate number of nulls
+  const scoresArray = new Array(maxScoreArrayLength - 2).fill(null);
+
   await addDoc(collection(db, "bowlers"), {
     name: name,
     nicknames: nicknames,
-    scores: []
+    scores: scoresArray
   });
   console.log(`Added new bowler: ${name} with nicknames: ${nicknames.join(', ')}`);
 }
 
 /**
  * Prompts the user to enter the name and nicknames of new bowlers
- * until the user decides to stop adding more.
+ * until the user decides to stop adding more. Ensures scores array is initialized based on maxScoreArrayLength.
+ * 
+ * @param maxScoreArrayLength - The current maxScoreArrayLength that determines the size of the scores array.
  */
-async function promptForNewBowlers() {
+async function promptForNewBowlers(maxScoreArrayLength) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -252,7 +257,7 @@ async function promptForNewBowlers() {
         if (name) {
           rl.question('Do they have any nicknames? (Separate with commas if multiple): ', async (nicknamesInput) => {
             const nicknames = nicknamesInput ? nicknamesInput.split(',').map(n => n.trim()) : [];
-            await addNewBowler(name, nicknames);
+            await addNewBowler(name, nicknames, maxScoreArrayLength);
             resolve();
           });
         } else {
@@ -305,7 +310,12 @@ function findBowlerByNameOrNickname(playerName, bowlers) {
 }
 
 async function main() {
-  await promptForNewBowlers(); // Prompt to add new bowlers before starting
+
+  // Initialize maxScoreArrayLength at the beginning
+  let maxScoreArrayLength = await getMaxScoreArrayLength();
+  maxScoreArrayLength = await promptForMaxScoreArrayLength(maxScoreArrayLength);
+
+  await promptForNewBowlers(maxScoreArrayLength); // Prompt to add new bowlers before starting
   let bowlers = await getCompleteBowlerList(); // Get the complete bowlers list
 
   // Normalize all bowler names in the database
@@ -317,10 +327,6 @@ async function main() {
 
   let activeList = []; // Initialize an empty active list
   let cycleCount = 0; // Initialize a counter for the number of loops
-
-  // Initialize maxScoreArrayLength at the beginning
-  let maxScoreArrayLength = await getMaxScoreArrayLength();
-  maxScoreArrayLength = await promptForMaxScoreArrayLength(maxScoreArrayLength);
 
   while (true) { // Keep looping until we manually break
 
