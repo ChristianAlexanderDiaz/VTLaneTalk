@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs } from "firebase/firestore"; // Importing functions with firestore
+import { collection, getDocs } from "firebase/firestore"; // Importing functions with Firestore
 import { db } from './firebase'; // Importing the Firestore database
 
 /**
@@ -20,37 +20,41 @@ function BowlersList() {
     fetchBowlers();
   }, []);
 
+  // Filter bowlers based on the search term
   const filteredBowlers = bowlers.filter(bowler =>
     bowler.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="container">
-      {/* Search bar for filtering bowlers by name */}
-      <input 
+    <div>
+      <input
         type="text"
-        placeholder="Search bowlers..."
+        className="form-control mb-3"
+        placeholder="Search by name..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="form-control mb-3"
       />
 
-      <div className="row">
-        {filteredBowlers.map((bowler) => (
-          <div className="col-md-4" key={bowler.id}>
-            <div className="card mb-4">
-              {/* Placeholder for bowler's image */}
-              <img src="..." className="card-img-top" alt="" />
-              <div className="card-body">
-                {/* Bowler's name */}
-                <h5 className="card-title">{bowler.name}</h5>
-                {/* Bowler's average */}
-                <p className="card-text">Avg: </p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <table className="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Average</th>
+            <th scope="col">Scores</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredBowlers.map((bowler, index) => (
+            <tr key={bowler.id}>
+              <th scope="row">{index + 1}</th>
+              <td>{bowler.name}</td>
+              <td>{bowler.average}</td>
+              <td>{bowler.scores.join(', ')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
