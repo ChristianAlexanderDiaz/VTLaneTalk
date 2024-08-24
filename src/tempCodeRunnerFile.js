@@ -1,0 +1,1 @@
+        // console.log(`Initial databaseScoresArray for ${bowler.name}:`, databaseScoresArray);
