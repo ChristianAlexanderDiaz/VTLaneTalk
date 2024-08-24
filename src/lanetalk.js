@@ -232,7 +232,7 @@ async function addNewBowler(name, nicknames = [], maxScoreArrayLength) {
   await addDoc(collection(db, "bowlers"), {
     name: name,
     nicknames: nicknames,
-    scores: scoresArray
+    scores: scoresArray,
     average: 0
   });
   console.log(`Added new bowler: ${name} with nicknames: ${nicknames.join(', ')}`);
