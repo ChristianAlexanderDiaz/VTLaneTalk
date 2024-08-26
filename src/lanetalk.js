@@ -444,7 +444,7 @@ async function main() {
     console.log(`Cycle ${cycleCount} completed.\n`); // Indicate that the current cycle is complete
 
     // Start the countdown for the next cycle
-    const countdownSeconds = 3; // Time in seconds for the countdown
+    const countdownSeconds = 60; // Time in seconds for the countdown
     for (let i = countdownSeconds; i >= 0; i--) {
       process.stdout.write(`\rTime left until next cycle: ${i} seconds`); // Overwrite the current line with time left
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second
