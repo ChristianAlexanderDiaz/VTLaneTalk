@@ -395,8 +395,26 @@ async function main() {
   }));
 
   let activeList = []; // Initialize an empty active list
-  let cycleCount = 0; // Initialize a counter for the number of loops
   let hasProcessedAtLeastOneActiveBowler = false; // Flag to check if at least one active bowler has been processed
+
+  // ! Recover any bowlers that have a first score but not a second score in case the script was interrupted
+  for (const bowler of bowlers) {
+    const bowlerRef = doc(db, "bowlers", bowler.id);
+    const bowlerSnapshot = await getDoc(bowlerRef);
+    const databaseScoresArray = bowlerSnapshot.data().scores || [];
+
+    const firstGameIndex = maxScoreArrayLength - 2; // Index for the first game
+    const secondGameIndex = maxScoreArrayLength - 1; // Index for the second game
+
+    // Check if the bowler has a first score but not a second score
+    if (databaseScoresArray[firstGameIndex] && !databaseScoresArray[secondGameIndex]) {
+      console.log(`${bowler.name} has a first score but not a second score, adding them to the active list.`);
+      hasProcessedAtLeastOneActiveBowler = true; // Set the flag to true for the active player
+      activeList.push(bowler.id); // Add the bowler to the active list
+    }
+  }
+
+  let cycleCount = 0; // Initialize a counter for the number of loops
 
   while (true) { // Keep looping until we manually break
 
