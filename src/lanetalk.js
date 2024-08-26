@@ -18,6 +18,53 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 /**
+ * Calculates the average score from the scoresArray.
+ * 
+ * @param {Array<number>} scoresArray - An array of scores from which the average is calculated.
+ * @returns {number} The calculated average of the scores, rounded to two decimal places.
+ */
+function calculateAverage(scoresArray) {
+  // Filter out null values in the array to only consider valid scores
+  const validScores = scoresArray.filter(score => score !== null && !isNaN(score));
+
+  // If there are no valid scores, return 0 as the average
+  if (validScores.length === 0) {
+    return 0;
+  }
+
+  // Calculate the sum of valid scores
+  const sum = validScores.reduce((total, score) => total + parseFloat(score), 0);
+
+  // Calculate and return the average rounded to two decimal places
+  return (sum / validScores.length).toFixed(2);
+}
+
+/**
+ * Updates the bowler's average in the Firestore database based on their scoresArray.
+ * 
+ * @param {string} bowlerId - The ID of the bowler whose average is to be updated.
+ * @param {Array<number>} scoresArray - An array of scores from which the average is calculated and updated.
+ */
+async function updateBowlerAverage(bowlerId, scoresArray) {
+  // Calculate the new average based on the current scoresArray
+  const newAverage = calculateAverage(scoresArray);
+
+  // Reference to the bowler's document in Firestore
+  const bowlerRef = doc(db, "bowlers", bowlerId);
+
+  try {
+    // Update the average field in Firestore
+    await updateDoc(bowlerRef, {
+      average: newAverage
+    });
+
+    console.log(`Updated average for bowler ${bowlerId}: ${newAverage}`);
+  } catch (error) {
+    console.error("Error updating bowler's average:", error);
+  }
+}
+
+/**
  * Prompts the user to confirm or modify the maxScoreArrayLength.
  * 
  * @param currentLength - The current maxScoreArrayLength found in the database.
@@ -349,23 +396,26 @@ async function main() {
         let bowlerSnapshot = await getDoc(bowlerRef);
         let databaseScoresArray = bowlerSnapshot.data().scores || [];
 
-        console.log(`Initial databaseScoresArray for ${bowler.name}:`, databaseScoresArray);
+        // console.log(`Initial databaseScoresArray for ${bowler.name}:`, databaseScoresArray);
 
         // Case 1: Bowler is not in the active list, update the first score and add them to the active list
         if (!activeList.includes(bowler.id)) {
           if (!databaseScoresArray[firstGameIndex] && player.scoresArray.length > 0) {
             databaseScoresArray[firstGameIndex] = player.scoresArray[0]; // Insert the first score
+
             await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the first score
+            await updateBowlerAverage(bowler.id, databaseScoresArray); // Update the bowler's average
+
             console.log(`${bowler.name}'s first score updated to ${player.scoresArray[0]}`);
 
             activeList.push(bowler.id); // Add bowler to the active list
 
-            // Print the entire active list array
-            console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
-            console.log("Current active list (Names):", activeList.map(id => {
-              const bowler = bowlers.find(b => b.id === id);
-              return bowler ? bowler.name : "Unknown";
-            }));
+            // // Print the entire active list array
+            // console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
+            // console.log("Current active list (Names):", activeList.map(id => {
+            //   const bowler = bowlers.find(b => b.id === id);
+            //   return bowler ? bowler.name : "Unknown";
+            // }));
           }
         }
         // Case 2: Bowler is already in the active list, update the second score and remove them from the active list
@@ -373,16 +423,17 @@ async function main() {
           if (!databaseScoresArray[secondGameIndex] && player.scoresArray.length > 1) {
             databaseScoresArray[secondGameIndex] = player.scoresArray[1]; // Insert the second score
             await updateBowlerScores(bowler.id, databaseScoresArray); // Update the database with the second score
+            await updateBowlerAverage(bowler.id, databaseScoresArray); // Update the bowler's average
             console.log(`${bowler.name}'s second score updated to ${player.scoresArray[1]}`);
 
             activeList = activeList.filter(id => id !== bowler.id); // Remove bowler from the active list
 
-            // Print the entire active list array
-            console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
-            console.log("Current active list (Names):", activeList.map(id => {
-              const bowler = bowlers.find(b => b.id === id);
-              return bowler ? bowler.name : "Unknown";
-            }));
+            // // Print the entire active list array
+            // console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
+            // console.log("Current active list (Names):", activeList.map(id => {
+            //   const bowler = bowlers.find(b => b.id === id);
+            //   return bowler ? bowler.name : "Unknown";
+            // }));
 
             console.log(`${bowler.name} has completed both scores.`);
           }
@@ -393,7 +444,7 @@ async function main() {
     console.log(`Cycle ${cycleCount} completed.\n`); // Indicate that the current cycle is complete
 
     // Start the countdown for the next cycle
-    const countdownSeconds = 3; // Time in seconds for the countdown
+    const countdownSeconds = 60; // Time in seconds for the countdown
     for (let i = countdownSeconds; i >= 0; i--) {
       process.stdout.write(`\rTime left until next cycle: ${i} seconds`); // Overwrite the current line with time left
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second
