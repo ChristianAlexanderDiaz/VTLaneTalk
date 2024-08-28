@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/VTLaneTalk/static/css/main.85c2f416.css",
-    "main.js": "/VTLaneTalk/static/js/main.51046ac6.js",
+    "main.js": "/VTLaneTalk/static/js/main.d0342f70.js",
     "static/js/488.9e9e0da2.chunk.js": "/VTLaneTalk/static/js/488.9e9e0da2.chunk.js",
     "static/media/DMSans-VariableFont_opsz,wght.ttf": "/VTLaneTalk/static/media/DMSans-VariableFont_opsz,wght.b230ddb7eabb4b25e123.ttf",
     "index.html": "/VTLaneTalk/index.html",
     "main.85c2f416.css.map": "/VTLaneTalk/static/css/main.85c2f416.css.map",
-    "main.51046ac6.js.map": "/VTLaneTalk/static/js/main.51046ac6.js.map",
+    "main.d0342f70.js.map": "/VTLaneTalk/static/js/main.d0342f70.js.map",
     "488.9e9e0da2.chunk.js.map": "/VTLaneTalk/static/js/488.9e9e0da2.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.85c2f416.css",
-    "static/js/main.51046ac6.js"
+    "static/js/main.d0342f70.js"
   ]
 }
