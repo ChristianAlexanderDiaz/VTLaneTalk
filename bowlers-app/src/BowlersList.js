@@ -40,6 +40,8 @@ function BowlersList() {
           <tr>
             <th scope="col">#</th>
             <th scope="col">Name</th>
+            <th scope="col">Nicknames</th>
+            <th scope="col">Games</th>
             <th scope="col">Average</th>
             <th scope="col">Scores</th>
           </tr>
@@ -49,6 +51,8 @@ function BowlersList() {
             <tr key={bowler.id}>
               <th scope="row">{index + 1}</th>
               <td>{bowler.name}</td>
+              <td>{bowler.nicknames}</td>
+              <td>{bowler.scores.length}</td>
               <td>{bowler.average}</td>
               <td>{bowler.scores.join(', ')}</td>
             </tr>

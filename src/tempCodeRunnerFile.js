@@ -18,6 +18,27 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 /**
+ * Prints the names of bowlers currently in the active list.
+ * 
+ * @param activeList - An array of bowler IDs that are currently in the active list.
+ * @param bowlers - An array of objects representing different bowlers. Each bowler object has
+ * properties like `id` (the bowler's unique identifier) and `name` (the bowler's name).
+ */
+function printActiveBowlers(activeList, bowlers) {
+  if (activeList.length === 0) {
+    console.log("No bowlers are currently in the active list.");
+  } else {
+    console.log("Bowlers currently in the active list:");
+    activeList.forEach(id => {
+      const bowler = bowlers.find(b => b.id === id);
+      if (bowler) {
+        console.log(`- ${bowler.name}`);
+      }
+    });
+  }
+}
+
+/**
  * Calculates the average score from the scoresArray.
  * 
  * @param {Array<number>} scoresArray - An array of scores from which the average is calculated.
@@ -374,6 +395,25 @@ async function main() {
   }));
 
   let activeList = []; // Initialize an empty active list
+  let hasProcessedAtLeastOneActiveBowler = false; // Flag to check if at least one active bowler has been processed
+
+  // ! Recover any bowlers that have a first score but not a second score in case the script was interrupted
+  for (const bowler of bowlers) {
+    const bowlerRef = doc(db, "bowlers", bowler.id);
+    const bowlerSnapshot = await getDoc(bowlerRef);
+    const databaseScoresArray = bowlerSnapshot.data().scores || [];
+
+    const firstGameIndex = maxScoreArrayLength - 2; // Index for the first game
+    const secondGameIndex = maxScoreArrayLength - 1; // Index for the second game
+
+    // Check if the bowler has a first score but not a second score
+    if (databaseScoresArray[firstGameIndex] && !databaseScoresArray[secondGameIndex]) {
+      console.log(`${bowler.name} has a first score but not a second score, adding them to the active list.`);
+      hasProcessedAtLeastOneActiveBowler = true; // Set the flag to true for the active player
+      activeList.push(bowler.id); // Add the bowler to the active list
+    }
+  }
+
   let cycleCount = 0; // Initialize a counter for the number of loops
 
   while (true) { // Keep looping until we manually break
@@ -409,13 +449,7 @@ async function main() {
             console.log(`${bowler.name}'s first score updated to ${player.scoresArray[0]}`);
 
             activeList.push(bowler.id); // Add bowler to the active list
-
-            // // Print the entire active list array
-            // console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
-            // console.log("Current active list (Names):", activeList.map(id => {
-            //   const bowler = bowlers.find(b => b.id === id);
-            //   return bowler ? bowler.name : "Unknown";
-            // }));
+            hasProcessedAtLeastOneActiveBowler = true; // Set the flag to true
           }
         }
         // Case 2: Bowler is already in the active list, update the second score and remove them from the active list
@@ -428,23 +462,18 @@ async function main() {
 
             activeList = activeList.filter(id => id !== bowler.id); // Remove bowler from the active list
 
-            // // Print the entire active list array
-            // console.log("Current active list (IDs):", activeList); // Print the raw array of IDs
-            // console.log("Current active list (Names):", activeList.map(id => {
-            //   const bowler = bowlers.find(b => b.id === id);
-            //   return bowler ? bowler.name : "Unknown";
-            // }));
-
             console.log(`${bowler.name} has completed both scores.`);
           }
         }
       }
     }
 
-    console.log(`Cycle ${cycleCount} completed.\n`); // Indicate that the current cycle is complete
+    console.log(`Cycle ${cycleCount} completed.`); // Indicate that the current cycle is complete
+
+    printActiveBowlers(activeList, bowlers); // Print the bowlers currently in the active list
 
     // Start the countdown for the next cycle
-    const countdownSeconds = 60; // Time in seconds for the countdown
+    const countdownSeconds = 3; // Time in seconds for the countdown
     for (let i = countdownSeconds; i >= 0; i--) {
       process.stdout.write(`\rTime left until next cycle: ${i} seconds`); // Overwrite the current line with time left
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second
@@ -452,8 +481,8 @@ async function main() {
 
     console.log('\n'); // Move to the next line after the countdown
 
-    // Break the loop if all active bowlers have completed their scores
-    if (activeList.length === 0) {
+    // Break the loop if all active bowlers have completed their scores AND at least one bowler has been processed
+    if (activeList.length === 0 && hasProcessedAtLeastOneActiveBowler) {
       console.log("All bowlers have completed both scores, stopping the script.");
       break; // Exit the loop
     }

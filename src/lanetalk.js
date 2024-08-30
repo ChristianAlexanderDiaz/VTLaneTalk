@@ -18,6 +18,50 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 /**
+ * Prompts the user for the lane bounds.
+ * 
+ * @returns {Promise<{minLane: number, maxLane: number}>} The minimum and maximum lane numbers as an object.
+ */
+async function promptForLaneBounds() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question('Enter the minimum lane number: ', (minLane) => {
+      rl.question('Enter the maximum lane number: ', (maxLane) => {
+        rl.close();
+        resolve({
+          minLane: parseInt(minLane, 10),
+          maxLane: parseInt(maxLane, 10)
+        });
+      });
+    });
+  });
+}
+
+/**
+ * Filters the scraped data based on the lane bounds.
+ * 
+ * @param {Array} scrapedData - The array of objects containing scraped bowler data.
+ * @param {number} minLane - The minimum lane number to include.
+ * @param {number} maxLane - The maximum lane number to include.
+ * 
+ * @returns {Array} The filtered array of bowler objects within the specified lane bounds.
+ */
+function filterBowlersByLane(scrapedData, minLane, maxLane) {
+  return scrapedData.filter(player => {
+    // Check if the team exists and contains a number
+    if (player.team && /\d+/.test(player.team)) {
+      const laneNumber = parseInt(player.team.match(/\d+/)[0], 10);
+      return laneNumber >= minLane && laneNumber <= maxLane;
+    }
+    return false; // Exclude players without a valid team number
+  });
+}
+
+/**
  * Prints the names of bowlers currently in the active list.
  * 
  * @param activeList - An array of bowler IDs that are currently in the active list.
@@ -379,6 +423,9 @@ function findBowlerByNameOrNickname(playerName, bowlers) {
 }
 
 async function main() {
+  // Prompt for lane bounds
+  const { minLane, maxLane } = await promptForLaneBounds();
+  console.log(`Lane bounds set to ${minLane} - ${maxLane}`);
 
   // Initialize maxScoreArrayLength at the beginning
   let maxScoreArrayLength = await getMaxScoreArrayLength();
@@ -423,7 +470,9 @@ async function main() {
 
     const scrapedData = await scrapeData(); // Scrape data from LaneTalk
 
-    for (const player of scrapedData) {
+    const filteredData = filterBowlersByLane(scrapedData, minLane, maxLane); // Filter bowlers by lane bounds
+
+    for (const player of filteredData) {
       // Find the bowler by name or nickname
       const bowler = findBowlerByNameOrNickname(player.name, bowlers);
 
@@ -473,7 +522,7 @@ async function main() {
     printActiveBowlers(activeList, bowlers); // Print the bowlers currently in the active list
 
     // Start the countdown for the next cycle
-    const countdownSeconds = 3; // Time in seconds for the countdown
+    const countdownSeconds = 60; // Time in seconds for the countdown
     for (let i = countdownSeconds; i >= 0; i--) {
       process.stdout.write(`\rTime left until next cycle: ${i} seconds`); // Overwrite the current line with time left
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second
