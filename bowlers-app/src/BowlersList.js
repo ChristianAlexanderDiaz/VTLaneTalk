@@ -1,65 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore"; // Importing functions with Firestore
-import { db } from './firebase'; // Importing the Firestore database
+import { db } from "./firebase"; // Importing the Firestore database
+import { Link } from "react-router-dom"; // Import the Link component
 
 /**
- * This page will handle showing all the bowlers in a list with various cards.
+ * This component will render each bowler in a Bootstrap card, displaying their name, average,
+ * and a button to navigate to their detailed page.
  */
 function BowlersList() {
-  const [bowlers, setBowlers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [bowlers, setBowlers] = useState([]); // State to store the list of bowlers
+  const [searchTerm, setSearchTerm] = useState(""); // State for search term input
 
   useEffect(() => {
     const fetchBowlers = async () => {
       const querySnapshot = await getDocs(collection(db, "bowlers")); // Fetch bowlers from Firestore
-      const bowlerData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Map the data to include document ID and data
-      bowlerData.sort((a, b) => a.name.localeCompare(b.name)); // Sorting bowlers alphabetically by their name
-      setBowlers(bowlerData); // Update the state with fetched and sorted data
+      const bowlerData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })); // Extracting ID and data
+      bowlerData.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name alphabetically
+      setBowlers(bowlerData); // Set the fetched data into state
     };
 
-    fetchBowlers();
+    fetchBowlers(); // Call the async function to fetch data
   }, []);
 
   // Filter bowlers based on the search term
-  const filteredBowlers = bowlers.filter(bowler =>
-    bowler.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBowlers = bowlers.filter(
+    (bowler) => bowler.name.toLowerCase().includes(searchTerm.toLowerCase()) // Simple search functionality
   );
 
   return (
-    <div>
-      <input
-        type="text"
-        className="form-control mb-3"
-        placeholder="Search by name..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+    <>
+      <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/">
+            The Bowling Club at Virginia Tech
+          </a>
+          <span class="navbar-text">Fall 2024</span>
+        </div>
+      </nav>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Nicknames</th>
-            <th scope="col">Games</th>
-            <th scope="col">Average</th>
-            <th scope="col">Scores</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredBowlers.map((bowler, index) => (
-            <tr key={bowler.id}>
-              <th scope="row">{index + 1}</th>
-              <td>{bowler.name}</td>
-              <td>{bowler.nicknames}</td>
-              <td>{bowler.scores.length}</td>
-              <td>{bowler.average}</td>
-              <td>{bowler.scores.join(', ')}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      <div className="card-group">
+        {filteredBowlers.map((bowler) => (
+          <div className="card mb-3" key={bowler.id} style={{ minWidth: "18rem" }}>
+            {/* Card for each bowler */}
+            <div className="card-body">
+              <h5 className="card-title">{bowler.name}</h5>
+              {/* Display bowler's name */}
+              <p className="card-text">Average: {bowler.average}</p>
+              {/* Display bowler's average */}
+              <Link to={`/bowler/${bowler.id}`} className="btn btn-primary">
+                View Details
+              </Link>
+              {/* Button linking to detailed bowler page */}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
