@@ -9,7 +9,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<BowlersList />} />
+        <Route path="/VTLaneTalk" element={<BowlersList />} />
         <Route path="/bowler/:id" element={<BowlersDetail />} />
         {/* Route for detailed bowler page */}
       </Routes>
