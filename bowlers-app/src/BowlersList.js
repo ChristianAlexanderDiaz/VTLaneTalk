@@ -3,10 +3,6 @@ import { collection, getDocs } from "firebase/firestore"; // Importing functions
 import { db } from "./firebase"; // Importing the Firestore database
 import { Link } from "react-router-dom"; // Import the Link component
 
-/**
- * This component will render each bowler in a Bootstrap card, displaying their name, average,
- * and a button to navigate to their detailed page.
- */
 function BowlersList() {
   const [bowlers, setBowlers] = useState([]); // State to store the list of bowlers
   const [searchTerm, setSearchTerm] = useState(""); // State for search term input
@@ -26,37 +22,61 @@ function BowlersList() {
   }, []);
 
   // Filter bowlers based on the search term
-  const filteredBowlers = bowlers.filter(
-    (bowler) => bowler.name.toLowerCase().includes(searchTerm.toLowerCase()) // Simple search functionality
+  const filteredBowlers = bowlers.filter((bowler) =>
+    bowler.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <>
-      <nav class="navbar bg-body-tertiary">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="/">
+      {/* Navbar */}
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div className="container-fluid">
+          <a className="navbar-brand" href="/">
             The Bowling Club at Virginia Tech
           </a>
-          <span class="navbar-text">Fall 2024</span>
+          <span className="navbar-text">Fall 2024</span>
         </div>
       </nav>
 
-      <div className="card-group">
-        {filteredBowlers.map((bowler) => (
-          <div className="card mb-3" key={bowler.id} style={{ minWidth: "18rem" }}>
-            {/* Card for each bowler */}
-            <div className="card-body">
-              <h5 className="card-title">{bowler.name}</h5>
-              {/* Display bowler's name */}
-              <p className="card-text">Average: {bowler.average}</p>
-              {/* Display bowler's average */}
-              <Link to={`/bowler/${bowler.id}`} className="btn btn-primary">
-                View Details
-              </Link>
-              {/* Button linking to detailed bowler page */}
-            </div>
+      {/* Search Bar */}
+      <div className="container mt-3">
+        <div className="row justify-content-center">
+          <div className="col-md-6">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search bowlers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* Bowlers List */}
+      <div className="container mt-4">
+        <div className="row">
+          {filteredBowlers.map((bowler) => (
+            <div key={bowler.id} className="col-12 col-md-6 col-lg-4 mb-4">
+              <div className="card h-100">
+                {/* If you have an image URL in your data, you can use it here */}
+                {/* <img src={bowler.imageUrl} className="card-img-top" alt={bowler.name} /> */}
+                <div className="card-body d-flex flex-column text-center">
+                  <h5 className="card-title">{bowler.name}</h5>
+                  {/* Display bowler's name */}
+                  <p className="card-text">Average: {bowler.average}</p>
+                  {/* Display bowler's average */}
+                  <div className="mt-auto d-flex justify-content-center">
+                    <Link to={`/bowler/${bowler.id}`} className="btn btn-primary">
+                      View Details
+                    </Link>
+                  </div>
+                  {/* Button linking to detailed bowler page */}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
